@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumière — Световой Скульптор</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#08080e;color:#e0e0e0;overflow:hidden;height:100vh}
+#app{display:flex;height:100vh;width:100vw}
+
+.profile-panel{width:360px;min-width:360px;background:#0c0c16;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;overflow:hidden}
+.view-panel{flex:1;position:relative;overflow:hidden}
+#canvas-container{width:100%;height:100%}
+
+.editor-area{flex:1;position:relative;background:linear-gradient(180deg,#0e0e18 0%,#0a0a12 100%);margin:12px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;cursor:crosshair}
+.editor-area canvas{display:block;width:100%;height:100%}
+
+.btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;transition:all .2s;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#ccc;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;user-select:none}
+.btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.btn-accent{background:linear-gradient(135deg,#8b5cf6,#6366f1);border:none;color:#fff;font-weight:600}
+.btn-accent:hover{box-shadow:0 4px 20px rgba(139,92,246,0.4);transform:translateY(-1px)}
+.btn-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);cursor:pointer;color:#aaa;transition:all .2s;font-size:16px}
+.btn-icon:hover{background:rgba(255,255,255,0.1);color:#fff}
+.btn-icon.active{background:rgba(139,92,246,0.2);border-color:rgba(139,92,246,0.4);color:#a78bfa}
+
+.pill{padding:5px 10px;border-radius:20px;font-size:11px;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#aaa;transition:all .2s}
+.pill:hover{background:rgba(255,255,255,0.08)}
+.pill.active{background:rgba(139,92,246,0.2);border-color:rgba(139,92,246,0.4);color:#d4bfff}
+
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;outline:none;cursor:pointer}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#818cf8);border:2px solid #0e0e18;cursor:pointer;box-shadow:0 0 6px rgba(139,92,246,0.5)}
+
+.color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;transition:all .2s;border:2px solid transparent;position:relative}
+.color-dot:hover{transform:scale(1.2)}
+.color-dot.active{border-color:#fff;transform:scale(1.25);box-shadow:0 0 10px rgba(255,255,255,0.3)}
+
+.socket-btn{padding:6px 8px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#aaa;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px}
+.socket-btn:hover{background:rgba(255,255,255,0.08)}
+.socket-btn.active{background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.4);color:#fbbf24}
+
+.section-title{font-size:10px;font-weight:600;color:#555;letter-spacing:.08em;text-transform:uppercase;margin:8px 0 6px}
+.divider{height:1px;background:rgba(255,255,255,0.05);margin:4px 0}
+
+.loading-screen{position:fixed;inset:0;background:#08080e;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loader{width:48px;height:48px;border:3px solid rgba(255,255,255,0.08);border-top-color:#8b5cf6;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.tooltip-wrap{position:relative}
+.tooltip-wrap::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(4px);background:rgba(20,20,30,0.95);color:#ddd;padding:5px 10px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:all .2s;border:1px solid rgba(255,255,255,0.08)}
+.tooltip-wrap:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.badge{font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.2);color:#34d399}
+.badge-new{font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(139,92,246,0.2);color:#c4b5fd}
+
+.scrollbar-hide::-webkit-scrollbar{display:none}
+.scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
+
+.bottom-bar{height:56px;background:rgba(12,12,22,0.95);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:10}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loader">
+  <div class="loader mb-4"></div>
+  <p class="text-xs text-gray-500">Инициализация сцены...</p>
+</div>
+
+<div id="app">
+  <!-- LEFT: Profile Editor -->
+  <div class="profile-panel">
+    <div class="p-4 pb-2">
+      <div class="flex items-center gap-3 mb-1">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-sm">💡</div>
+        <div>
+          <h1 class="text-sm font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Lumière</h1>
+          <p class="text-[10px] text-gray-500 -mt-0.5">Световой Скульптор</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-4 py-1">
+      <div class="section-title">Профиль плафона <span class="badge-new">рисуйте</span></div>
+      <p class="text-[10px] text-gray-500 mb-2">Клик = добавить точку • Перетаскивание = изменить</p>
+    </div>
+
+    <div class="editor-area" id="editorWrap">
+      <canvas id="profileCanvas"></canvas>
+    </div>
+
+    <div class="px-4 pb-2 space-y-2">
+      <div class="flex gap-1.5">
+        <button class="btn text-[11px]" id="btnAdd" onclick="window.addPoint()">＋ Точка</button>
+        <button class="btn text-[11px]" id="btnRemove" onclick="window.removeLastPoint()">－ Удалить</button>
+        <button class="btn text-[11px]" id="btnSmooth" onclick="window.smoothProfile()">〰 Сгладить</button>
+        <button class="btn text-[11px]" id="btnMirror" onclick="window.mirrorProfile()">↔ Зеркало</button>
+      </div>
+    </div>
+
+    <div class="px-4 py-1">
+      <div class="section-title">Быстрые профили</div>
+      <div class="flex gap-1.5 flex-wrap pb-2">
+        <button class="pill" data-p="sphere" onclick="window.loadPreset('sphere')">Сфера</button>
+        <button class="pill" data-p="bell" onclick="window.loadPreset('bell')">Колокол</button>
+        <button class="pill" data-p="vase" onclick="window.loadPreset('vase')">Ваза</button>
+        <button class="pill" data-p="cone" onclick="window.loadPreset('cone')">Конус</button>
+        <button class="pill" data-p="cylinder" onclick="window.loadPreset('cylinder')">Цилиндр</button>
+        <button class="pill" data-p="flute" onclick="window.loadPreset('flute')">Флейта</button>
+        <button class="pill" data-p="tulip" onclick="window.loadPreset('tulip')">Тюльпан</button>
+        <button class="pill" data-p="mushroom" onclick="window.loadPreset('mushroom')">Гриб</button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-4 space-y-1 scrollbar-hide" id="settingsArea">
+      <div class="divider"></div>
+
+      <div class="section-title">Цоколь лампы</div>
+      <div class="flex gap-1.5 flex-wrap pb-2" id="socketBar">
+        <button class="socket-btn" data-s="E27" onclick="window.setSocket('E27')">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="5" y="1" width="8" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="3" x2="11" y2="3" stroke="currentColor" stroke-width="0.7"/><line x1="7" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="0.7"/><line x1="7" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="0.7"/><rect x="4" y="10" width="10" height="1.5" rx="0.5" fill="currentColor" opacity="0.4"/><circle cx="9" cy="14" r="2" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          E27
+        </button>
+        <button class="socket-btn" data-s="E14" onclick="window.setSocket('E14')">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="6" y="1" width="6" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="5" y="10" width="8" height="1.5" rx="0.5" fill="currentColor" opacity="0.4"/><circle cx="9" cy="14" r="1.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          E14
+        </button>
+        <button class="socket-btn" data-s="GU10" onclick="window.setSocket('GU10')">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="3" y="1" width="12" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="4" y="7" width="10" height="3" fill="currentColor" opacity="0.3"/><rect x="5" y="10" width="3" height="1" fill="currentColor" opacity="0.5"/><rect x="10" y="10" width="3" height="1" fill="currentColor" opacity="0.5"/><rect x="5" y="11" width="8" height="5" rx="2" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          GU10
+        </button>
+        <button class="socket-btn" data-s="G9" onclick="window.setSocket('G9')">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="7" y="1" width="4" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 7 L5 13" stroke="currentColor" stroke-width="1.2"/><path d="M13 7 L13 13" stroke="currentColor" stroke-width="1.2"/><rect x="4" y="12" width="2" height="3" rx="1" fill="currentColor" opacity="0.5"/><rect x="12" y="12" width="2" height="3" rx="1" fill="currentColor" opacity="0.5"/></svg>
+          G9
+        </button>
+        <button class="socket-btn" data-s="B22" onclick="window.setSocket('B22')">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="5" y="1" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="8" width="2" height="3" rx="0.5" fill="currentColor" opacity="0.5"/><rect x="13" y="8" width="2" height="3" rx="0.5" fill="currentColor" opacity="0.5"/><circle cx="9" cy="14" r="2.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          B22
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">Материал</div>
+      <div class="flex gap-1.5 flex-wrap pb-2" id="matBar">
+        <button class="pill" data-m="glass" onclick="window.setMat('glass')">🔮 Стекло</button>
+        <button class="pill" data-m="crystal" onclick="window.setMat('crystal')">💎 Кристалл</button>
+        <button class="pill" data-m="metal" onclick="window.setMat('metal')">✨ Металл</button>
+        <button class="pill" data-m="ceramic" onclick="window.setMat('ceramic')">🏺 Керамика</button>
+        <button class="pill" data-m="fabric" onclick="window.setMat('fabric')">🧵 Ткань</button>
+        <button class="pill" data-m="paper" onclick="window.setMat('paper')">📜 Бумага</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">Цвет свечения</div>
+      <div class="flex gap-2 items-center pb-2 flex-wrap" id="colorBar">
+        <div class="color-dot" style="background:#fbbf24" onclick="window.setColor('#fbbf24',this)"></div>
+        <div class="color-dot" style="background:#f59e0b" onclick="window.setColor('#f59e0b',this)"></div>
+        <div class="color-dot" style="background:#ef4444" onclick="window.setColor('#ef4444',this)"></div>
+        <div class="color-dot" style="background:#8b5cf6" onclick="window.setColor('#8b5cf6',this)"></div>
+        <div class="color-dot" style="background:#06b6d4" onclick="window.setColor('#06b6d4',this)"></div>
+        <div class="color-dot" style="background:#10b981" onclick="window.setColor('#10b981',this)"></div>
+        <div class="color-dot" style="background:#ec4899" onclick="window.setColor('#ec4899',this)"></div>
+        <div class="color-dot" style="background:#fff" onclick="window.setColor('#ffffff',this)"></div>
+        <input type="color" id="customClr" value="#fbbf24" style="width:24px;height:24px;border:none;background:none;cursor:pointer;border-radius:50%" onchange="window.setColor(this.value,null)">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="space-y-2 pb-2">
+        <div class="flex justify-between text-[10px]"><span class="text-gray-400">Сегменты</span><span id="segV" class="text-gray-500">48</span></div>
+        <input type="range" class="slider" min="8" max="64" step="4" value="48" oninput="window.setSeg(this.value)">
+        <div class="flex justify-between text-[10px]"><span class="text-gray-400">Прозрачность</span><span id="opV" class="text-gray-500">0.75</span></div>
+        <input type="range" class="slider" min="0.1" max="1" step="0.01" value="0.75" oninput="window.setOp(this.value)">
+        <div class="flex justify-between text-[10px]"><span class="text-gray-400">Яркость</span><span id="brV" class="text-gray-500">1.5</span></div>
+        <input type="range" class="slider" min="0.2" max="4" step="0.1" value="1.5" oninput="window.setBr(this.value)">
+        <div class="flex justify-between text-[10px]"><span class="text-gray-400">Толщина</span><span id="thV" class="text-gray-500">0.5</span></div>
+        <input type="range" class="slider" min="0" max="2" step="0.05" value="0.5" oninput="window.setTh(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: 3D View -->
+  <div class="view-panel">
+    <div id="canvas-container"></div>
+
+    <!-- Top overlay -->
+    <div class="absolute top-4 left-4 right-4 flex justify-between z-10 pointer-events-none">
+      <div class="glass px-3 py-1.5 pointer-events-auto">
+        <span class="text-xs text-gray-400" id="infoText">Сфера • Стекло • E27</span>
+      </div>
+      <div class="glass px-2 py-1.5 flex items-center gap-1.5 pointer-events-auto">
+        <button class="btn-icon tooltip-wrap" data-tip="Автовращение" id="rotBtn" onclick="window.toggleRot()">🔄</button>
+        <button class="btn-icon tooltip-wrap" data-tip="Каркас" id="wireBtn" onclick="window.toggleWire()">📐</button>
+        <button class="btn-icon tooltip-wrap" data-tip="Вид сверху" onclick="window.viewTop()">⬆</button>
+        <button class="btn-icon tooltip-wrap" data-tip="Вид спереди" onclick="window.viewFront()">◻</button>
+        <button class="btn-icon tooltip-wrap" data-tip="Сброс камеры" onclick="window.resetCam()">🎯</button>
+        <button class="btn-icon tooltip-wrap" data-tip="Полный экран" onclick="window.toggleFS()">⛶</button>
+        <button class="btn-icon tooltip-wrap" data-tip="Сохранить PNG" onclick="window.exportPNG()">📷</button>
+      </div>
+    </div>
+
+    <!-- Style presets -->
+    <div class="absolute bottom-20 left-4 right-4 flex justify-center gap-2 z-10 pointer-events-none">
+      <div class="glass px-3 py-2 pointer-events-auto flex gap-2">
+        <button class="btn text-[11px]" onclick="window.applyStyle('modern')">🏠 Модерн</button>
+        <button class="btn text-[11px]" onclick="window.applyStyle('classic')">🏛 Классика</button>
+        <button class="btn text-[11px]" onclick="window.applyStyle('loft')">🧱 Лофт</button>
+        <button class="btn text-[11px]" onclick="window.applyStyle('scandi')">🌿 Сканди</button>
+        <button class="btn text-[11px]" onclick="window.applyStyle('boho')">🌸 Бохо</button>
+        <button class="btn text-[11px]" onclick="window.applyStyle('minimal')">⬜ Минимал</button>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="absolute bottom-0 left-0 right-0 z-10">
+      <div class="bottom-bar">
+        <button class="btn-accent btn flex-1" onclick="window.randomDesign()">🎲 Случайный дизайн</button>
+        <button class="btn" onclick="window.exportPNG()">📷 Экспорт</button>
+        <button class="btn" onclick="window.resetProfile()">↺ Сбросить профиль</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+
+<script type="module">
+import * as THREE from 'three'
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
+
+// ===== STATE =====
+const S = {
+  points: [],
+  color: '#fbbf24',
+  mat: 'glass',
+  socket: 'E27',
+  segs: 48,
+  opacity: 0.75,
+  brightness: 1.5,
+  thickness: 0.5,
+  rotating: true,
+  wireframe: false,
+}
+
+// ===== PRESETS =====
+const presets = {
+  sphere:  [[0.02,1.0],[0.15,0.88],[0.35,0.7],[0.55,0.45],[0.7,0.25],[0.78,0.1],[0.75,0],[0.5,0.05],[0.15,0.2],[0.02,0.3]],
+  bell:    [[0.02,1.0],[0.1,0.85],[0.2,0.7],[0.3,0.5],[0.4,0.35],[0.55,0.2],[0.7,0.1],[0.75,0.02]],
+  vase:    [[0.12,1.0],[0.08,0.8],[0.06,0.6],[0.15,0.45],[0.3,0.3],[0.25,0.2],[0.15,0.1],[0.1,0.02]],
+  cone:    [[0.02,1.0],[0.1,0.8],[0.3,0.5],[0.5,0.3],[0.7,0.1],[0.8,0.02]],
+  cylinder:[[0.6,1.0],[0.6,0.5],[0.6,0.02]],
+  flute:   [[0.05,1.0],[0.08,0.8],[0.15,0.6],[0.12,0.4],[0.2,0.25],[0.25,0.15],[0.3,0.08],[0.35,0.02]],
+  tulip:   [[0.05,1.0],[0.1,0.85],[0.2,0.65],[0.35,0.5],[0.5,0.35],[0.6,0.2],[0.55,0.1],[0.4,0.05],[0.2,0.1],[0.05,0.15],[0.02,0.2]],
+  mushroom:[[0.05,1.0],[0.08,0.85],[0.12,0.6],[0.1,0.45],[0.3,0.35],[0.55,0.25],[0.75,0.15],[0.8,0.08],[0.7,0.02]],
+}
+
+const socketData = {
+  E27:{r:0.12,h:0.12,pins:0},
+  E14:{r:0.08,h:0.10,pins:0},
+  GU10:{r:0.13,h:0.06,pins:2},
+  G9:{r:0.05,h:0.08,pins:2},
+  B22:{r:0.11,h:0.10,pins:2},
+}
+
+const stylePresets = {
+  modern:{mat:'glass',color:'#fbbf24',socket:'E27',opacity:0.7,brightness:1.5,profile:'sphere'},
+  classic:{mat:'crystal',color:'#f59e0b',socket:'E27',opacity:0.85,brightness:1.2,profile:'bell'},
+  loft:{mat:'metal',color:'#ef4444',socket:'E27',opacity:0.3,brightness:2.0,profile:'cylinder'},
+  scandi:{mat:'paper',color:'#ffffff',socket:'E14',opacity:0.55,brightness:1.8,profile:'cone'},
+  boho:{mat:'fabric',color:'#ec4899',socket:'E14',opacity:0.6,brightness:1.3,profile:'tulip'},
+  minimal:{mat:'glass',color:'#ffffff',socket:'GU10',opacity:0.4,brightness:1.0,profile:'sphere'},
+}
+
+// ===== THREE.JS =====
+let scene, camera, renderer, controls
+let shadeMesh, shadeGroup, lightBulb, socketGroup
+let pointLight, pointLight2
+
+function init3D() {
+  scene = new THREE.Scene()
+
+  const bgCanvas = document.createElement('canvas')
+  bgCanvas.width = 512; bgCanvas.height = 512
+  const bgCtx = bgCanvas.getContext('2d')
+  const bgGrad = bgCtx.createRadialGradient(256,256,50,256,256,380)
+  bgGrad.addColorStop(0,'#1a1a2e')
+  bgGrad.addColorStop(0.6,'#0f0f1a')
+  bgGrad.addColorStop(1,'#08080e')
+  bgCtx.fillStyle = bgGrad
+  bgCtx.fillRect(0,0,512,512)
+  scene.background = new THREE.CanvasTexture(bgCanvas)
+
+  camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
+  camera.position.set(3, 2.5, 3)
+
+  renderer = new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true})
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.2
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  document.getElementById('canvas-container').appendChild(renderer.domElement)
+
+  controls = new OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = true
+  controls.dampingFactor = 0.05
+  controls.maxDistance = 8
+  controls.minDistance = 1.5
+  controls.target.set(0,0.2,0)
+
+  scene.add(new THREE.AmbientLight(0x111122,0.3))
+  scene.add(new THREE.HemisphereLight(0x1a1a2e,0x08080e,0.4))
+
+  shadeGroup = new THREE.Group()
+
+  const rod = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025,0.025,1.2,8),
+    new THREE.MeshStandardMaterial({color:0x2a2a3a,metalness:0.8,roughness:0.3})
+  )
+  rod.position.y = 2.1
+  shadeGroup.add(rod)
+
+  const rose = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.1,0.12,0.04,16),
+    new THREE.MeshStandardMaterial({color:0x1a1a2a,metalness:0.5,roughness:0.5})
+  )
+  rose.position.y = 2.72
+  shadeGroup.add(rose)
+
+  lightBulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08,16,16),
+    new THREE.MeshBasicMaterial({color:S.color})
+  )
+  lightBulb.position.y = 0.85
+  shadeGroup.add(lightBulb)
+
+  pointLight = new THREE.PointLight(new THREE.Color(S.color),S.brightness,12,1.5)
+  pointLight.position.y = 0.85
+  pointLight.castShadow = true
+  shadeGroup.add(pointLight)
+
+  pointLight2 = new THREE.PointLight(new THREE.Color(S.color),S.brightness*0.25,6,2)
+  pointLight2.position.y = 0.6
+  shadeGroup.add(pointLight2)
+
+  createSocketMesh(S.socket)
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(10,10),
+    new THREE.ShadowMaterial({opacity:0.2})
+  )
+  floor.rotation.x = -Math.PI/2
+  floor.position.y = -0.5
+  floor.receiveShadow = true
+  scene.add(floor)
+
+  scene.add(shadeGroup)
+  buildShade()
+  resizeRenderer()
+  window.addEventListener('resize', resizeRenderer)
+  animate()
+}
+
+function resizeRenderer() {
+  const panel = document.querySelector('.view-panel')
+  const w = panel.clientWidth
+  const h = panel.clientHeight
+  camera.aspect = w / h
+  camera.updateProjectionMatrix()
+  renderer.setSize(w, h)
+}
+
+function createSocketMesh(type) {
+  if (socketGroup) {
+    shadeGroup.remove(socketGroup)
+    socketGroup.traverse(c => {if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose()})
+  }
+  socketGroup = new THREE.Group()
+  const d = socketData[type]
+  const socketMat = new THREE.MeshStandardMaterial({color:0x777788,metalness:0.9,roughness:0.2})
+  const brassMat = new THREE.MeshStandardMaterial({color:0xccaa44,metalness:0.85,roughness:0.25})
+  const darkMat = new THREE.MeshStandardMaterial({color:0x1a1a2a,metalness:0.3,roughness:0.7})
+
+  if (type === 'E27' || type === 'E14') {
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(d.r,d.r,d.h,16),socketMat)
+    base.position.y = 0.95
+    socketGroup.add(base)
+    const rings = type === 'E27' ? 4 : 3
+    for (let i = 0; i < rings; i++) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(d.r+0.003,0.006,6,24),brassMat)
+      ring.position.y = 0.9 + i * (d.h/rings)
+      ring.rotation.x = Math.PI/2
+      socketGroup.add(ring)
+    }
+    const ins = new THREE.Mesh(new THREE.CylinderGeometry(d.r*0.6,d.r*0.6,0.015,16),darkMat)
+    ins.position.y = 0.95 - d.h/2 - 0.007
+    socketGroup.add(ins)
+  } else if (type === 'GU10') {
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(d.r,d.r+0.01,d.h,16),socketMat)
+    base.position.y = 0.95
+    socketGroup.add(base)
+    const pinGeo = new THREE.CylinderGeometry(0.012,0.012,0.05,8)
+    for (let p = -1; p <= 1; p += 2) {
+      const pin = new THREE.Mesh(pinGeo,brassMat)
+      pin.position.set(p*0.05,0.95,0)
+      socketGroup.add(pin)
+    }
+    const housing = new THREE.Mesh(
+      new THREE.CylinderGeometry(d.r*0.6,d.r*0.4,0.1,16),
+      new THREE.MeshStandardMaterial({color:0x2a2a3a,metalness:0.3,roughness:0.5})
+    )
+    housing.position.y = 0.92 - d.h/2 - 0.05
+    socketGroup.add(housing)
+  } else if (type === 'G9') {
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(d.r,d.r,d.h,12),socketMat)
+    body.position.y = 0.95
+    socketGroup.add(body)
+    const loopGeo = new THREE.TorusGeometry(0.035,0.006,6,12,Math.PI)
+    for (let p = -1; p <= 1; p += 2) {
+      const loop = new THREE.Mesh(loopGeo,brassMat)
+      loop.position.set(p*0.035,0.93,0)
+      loop.rotation.y = Math.PI/2
+      socketGroup.add(loop)
+    }
+  } else if (type === 'B22') {
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(d.r,d.r,d.h,16),socketMat)
+    base.position.y = 0.95
+    socketGroup.add(base)
+    const pinGeo = new THREE.CylinderGeometry(0.01,0.01,0.025,8)
+    for (let p = -1; p <= 1; p += 2) {
+      const pin = new THREE.Mesh(pinGeo,brassMat)
+      pin.position.set(p*(d.r+0.01),0.94,0)
+      pin.rotation.z = Math.PI/2
+      socketGroup.add(pin)
+    }
+    const btn = new THREE.Mesh(new THREE.SphereGeometry(0.025,8,8),darkMat)
+    btn.position.y = 0.95 - d.h/2 - 0.02
+    socketGroup.add(btn)
+  }
+
+  shadeGroup.add(socketGroup)
+}
+
+function buildShade() {
+  if (shadeMesh) {
+    shadeGroup.remove(shadeMesh)
+    shadeMesh.geometry.dispose()
+    shadeMesh.material.dispose()
+  }
+  const geo = profileToGeometry()
+  const mat = createMaterial()
+  shadeMesh = new THREE.Mesh(geo, mat)
+  shadeMesh.castShadow = true
+  shadeMesh.receiveShadow = true
+  shadeGroup.add(shadeMesh)
+}
+
+function profileToGeometry() {
+  if (S.points.length < 2) return new THREE.SphereGeometry(0.5,32,16)
+  const sorted = [...S.points].sort((a,b) => b[1] - a[1])
+  const pts = sorted.map(([r,y]) => new THREE.Vector2(r, y))
+  const geo = new THREE.LatheGeometry(pts, S.segs)
+  geo.computeVertexNormals()
+  return geo
+}
+
+function createMaterial() {
+  let m
+  const op = S.opacity
+  const t = S.thickness
+  const c = new THREE.Color(S.color)
+
+  switch(S.mat) {
+    case 'glass':
+      m = new THREE.MeshPhysicalMaterial({
+        color:new THREE.Color('#f0f0ff'),transparent:true,opacity:op,metalness:0,roughness:0.05,
+        transmission:0.9,thickness:t,ior:1.5,clearcoat:1,clearcoatRoughness:0.05,
+        side:THREE.DoubleSide,envMapIntensity:1
+      }); break
+    case 'crystal':
+      m = new THREE.MeshPhysicalMaterial({
+        color:new THREE.Color('#ffffff'),transparent:true,opacity:op,metalness:0.1,roughness:0,
+        transmission:0.95,thickness:t*1.5,ior:2.0,clearcoat:1,clearcoatRoughness:0,
+        side:THREE.DoubleSide,dispersion:0.15
+      }); break
+    case 'metal':
+      m = new THREE.MeshStandardMaterial({
+        color:c.clone().lerp(new THREE.Color('#888888'),0.5),metalness:0.95,roughness:0.15,side:THREE.DoubleSide
+      }); break
+    case 'ceramic':
+      m = new THREE.MeshStandardMaterial({
+        color:c.clone().lerp(new THREE.Color('#f5f5f0'),0.6),metalness:0.05,roughness:0.7,
+        transparent:true,opacity:op*0.9,side:THREE.DoubleSide
+      }); break
+    case 'fabric':
+      m = new THREE.MeshStandardMaterial({
+        color:c.clone().multiplyScalar(1.3),metalness:0,roughness:0.9,
+        transparent:true,opacity:op*0.9,side:THREE.DoubleSide
+      }); break
+    case 'paper':
+      m = new THREE.MeshStandardMaterial({
+        color:new THREE.Color('#faf3e0'),metalness:0,roughness:1,
+        transparent:true,opacity:op*0.7,side:THREE.DoubleSide
+      }); break
+    default:
+      m = new THREE.MeshPhysicalMaterial({
+        color:new THREE.Color('#ffffff'),transparent:true,opacity:op,
+        transmission:0.5,thickness:t,side:THREE.DoubleSide
+      });
+  }
+  if (S.wireframe) m.wireframe = true
+  return m
+}
+
+function animate() {
+  requestAnimationFrame(animate)
+  if (S.rotating && shadeGroup) shadeGroup.rotation.y += 0.003
+  if (pointLight) {
+    const pulse = 1 + Math.sin(Date.now()*0.002)*0.04
+    pointLight.intensity = S.brightness * pulse
+    lightBulb.material.color.set(S.color)
+    lightBulb.scale.setScalar(1+Math.sin(Date.now()*0.003)*0.04)
+  }
+  controls.update()
+  renderer.render(scene, camera)
+}
+
+// ===== PROFILE EDITOR =====
+let cvs, ctx, cvsW, cvsH
+let dragIdx = -1, hoverIdx = -1
+const MARGIN = 30
+
+function initEditor() {
+  cvs = document.getElementById('profileCanvas')
+  const wrap = document.getElementById('editorWrap')
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect()
+    cvsW = rect.width
+    cvsH = rect.height
+    const dpr = window.devicePixelRatio || 1
+    cvs.width = cvsW * dpr
+    cvs.height = cvsH * dpr
+    cvs.style.width = cvsW + 'px'
+    cvs.style.height = cvsH + 'px'
+    ctx = cvs.getContext('2d')
+    ctx.scale(dpr, dpr)
+    drawEditor()
+  }
+
+  resize()
+  new ResizeObserver(resize).observe(wrap)
+
+  function getPos(e) {
+    const rect = cvs.getBoundingClientRect()
+    return [e.clientX - rect.left, e.clientY - rect.top]
+  }
+
+  function findNearest(sx, sy) {
+    let best = -1, bestD = Infinity
+    for (let i = 0; i < S.points.length; i++) {
+      const [rx, ry] = S.points[i]
+      const px = pXtoS(rx)
+      const py = pYtoS(ry)
+      const d = Math.hypot(sx-px, sy-py)
+      if (d < 18 && d < bestD) { bestD = d; best = i }
+    }
+    return best
+  }
+
+  cvs.addEventListener('mousedown', e => {
+    const [x,y] = getPos(e)
+    const idx = findNearest(x,y)
+    if (idx >= 0) { dragIdx = idx; cvs.style.cursor = 'grabbing' }
+    else { addPointAt(x,y); drawEditor() }
+  })
+
+  cvs.addEventListener('mousemove', e => {
+    const [x,y] = getPos(e)
+    if (dragIdx >= 0) {
+      const px = sToPX(x)
+      const py = sToPY(y)
+      S.points[dragIdx][0] = Math.max(0.01, Math.min(1, px))
+      S.points[dragIdx][1] = Math.max(0, Math.min(1, py))
+      buildShade()
+      updateInfo()
+      drawEditor()
+    } else {
+      hoverIdx = findNearest(x,y)
+      cvs.style.cursor = hoverIdx >= 0 ? 'grab' : 'crosshair'
+      drawEditor()
+    }
+  })
+
+  cvs.addEventListener('mouseup', () => { dragIdx = -1; cvs.style.cursor = 'crosshair' })
+  cvs.addEventListener('mouseleave', () => { dragIdx = -1; hoverIdx = -1; cvs.style.cursor = 'crosshair'; drawEditor() })
+
+  cvs.addEventListener('touchstart', e => {
+    e.preventDefault()
+    const t = e.touches[0]
+    cvs.dispatchEvent(new MouseEvent('mousedown',{clientX:t.clientX,clientY:t.clientY}))
+  },{passive:false})
+
+  cvs.addEventListener('touchmove', e => {
+    e.preventDefault()
+    const t = e.touches[0]
+    cvs.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY}))
+  },{passive:false})
+
+  cvs.addEventListener('touchend', () => { dragIdx = -1 })
+}
+
+function sToPX(sx) { return (sx - MARGIN) / (cvsW - MARGIN*2) }
+function sToPY(sy) { return 1 - (sy - MARGIN) / (cvsH - MARGIN*2) }
+function pXtoS(rx) { return MARGIN + rx * (cvsW - MARGIN*2) }
+function pYtoS(ry) { return MARGIN + (1-ry) * (cvsH - MARGIN*2) }
+
+function addPointAt(sx, sy) {
+  const rx = Math.max(0.02, Math.min(0.9, sToPX(sx)))
+  const ry = Math.max(0.01, Math.min(0.99, sToPY(sy)))
+  S.points.push([rx, ry])
+  buildShade()
+  updateInfo()
+  drawEditor()
+}
+
+function drawEditor() {
+  if (!ctx) return
+  const w = cvsW, h = cvsH
+  ctx.clearRect(0, 0, w, h)
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'
+  ctx.lineWidth = 1
+  for (let i = 0; i <= 10; i++) {
+    const x = MARGIN + i*(w-MARGIN*2)/10
+    ctx.beginPath(); ctx.moveTo(x,MARGIN); ctx.lineTo(x,h-MARGIN); ctx.stroke()
+    const y = MARGIN + i*(h-MARGIN*2)/10
+    ctx.beginPath(); ctx.moveTo(MARGIN,y); ctx.lineTo(w-MARGIN,y); ctx.stroke()
+  }
+
+  // Axis
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+  ctx.setLineDash([4,4])
+  ctx.beginPath(); ctx.moveTo(MARGIN,MARGIN); ctx.lineTo(MARGIN,h-MARGIN); ctx.stroke()
+  ctx.setLineDash([])
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.12)'
+  ctx.font = '9px Inter, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('0', MARGIN, h-MARGIN+14)
+  ctx.fillText('1', w-MARGIN, h-MARGIN+14)
+
+  // Shade silhouette
+  if (S.points.length > 1) {
+    const sorted = [...S.points].sort((a,b) => b[1]-a[1])
+
+    // Fill right
+    ctx.fillStyle = 'rgba(139,92,246,0.08)'
+    ctx.beginPath()
+    sorted.forEach(([r,y], i) => {
+      const px = pXtoS(r), py = pYtoS(y)
+      i === 0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py)
+    })
+    ctx.lineTo(pXtoS(0), pYtoS(sorted[sorted.length-1][1]))
+    ctx.lineTo(pXtoS(0), pYtoS(sorted[0][1]))
+    ctx.closePath()
+    ctx.fill()
+
+    // Fill left
+    ctx.beginPath()
+    sorted.forEach(([r,y], i) => {
+      const px = pXtoS(-r), py = pYtoS(y)
+      i === 0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py)
+    })
+    ctx.lineTo(pXtoS(0), pYtoS(sorted[sorted.length-1][1]))
+    ctx.lineTo(pXtoS(0), pYtoS(sorted[0][1]))
+    ctx.closePath()
+    ctx.fill()
+
+    // Right outline
+    ctx.strokeStyle = 'rgba(167,139,250,0.5)'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    sorted.forEach(([r,y], i) => {
+      const px = pXtoS(r), py = pYtoS(y)
+      i === 0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py)
+    })
+    ctx.stroke()
+
+    // Left outline
+    ctx.beginPath()
+    sorted.forEach(([r,y], i) => {
+      const px = pXtoS(-r), py = pYtoS(y)
+      i === 0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py)
+    })
+    ctx.stroke()
+  }
+
+  // Points
+  for (let i = 0; i < S.points.length; i++) {
+    const [rx, ry] = S.points[i]
+    const px = pXtoS(rx), py = pYtoS(ry)
+    const isH = i === hoverIdx || i === dragIdx
+
+    if (isH) {
+      ctx.beginPath(); ctx.arc(px,py,12,0,Math.PI*2)
+      ctx.fillStyle = 'rgba(139,92,246,0.2)'; ctx.fill()
+    }
+
+    ctx.beginPath(); ctx.arc(px,py, isH?6:4, 0, Math.PI*2)
+    ctx.fillStyle = isH ? '#8b5cf6' : '#a78bfa'; ctx.fill()
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke()
+  }
+
+  // Info text
+  ctx.fillStyle = 'rgba(255,255,255,0.2)'
+  ctx.font = '10px Inter, sans-serif'
+  ctx.textAlign = 'right'
+  ctx.fillText(`${S.points.length} точек`, w-MARGIN, MARGIN-8)
+}
+
+// ===== GLOBAL API =====
+window.addPoint = function() {
+  const idx = Math.floor(S.points.length / 2)
+  const r = 0.3 + Math.random()*0.3
+  const y = 0.3 + Math.random()*0.4
+  S.points.splice(idx, 0, [r, y])
+  buildShade()
+  updateInfo()
+  drawEditor()
+}
+
+window.removeLastPoint = function() {
+  if (S.points.length <= 2) return
+  S.points.pop()
+  buildShade()
+  updateInfo()
+  drawEditor()
+}
+
+window.smoothProfile = function() {
+  if (S.points.length < 3) return
+  const sorted = [...S.points].sort((a,b) => b[1]-a[1])
+  const smoothed = sorted.map((pt,i) => {
+    if (i===0 || i===sorted.length-1) return [...pt]
+    const prev = sorted[i-1], next = sorted[i+1]
+    return [(prev[0]+pt[0]+next[0])/3, (prev[1]+pt[1]+next[1])/3]
+  })
+  S.points = smoothed
+  buildShade()
+  updateInfo()
+  drawEditor()
+}
+
+window.mirrorProfile = function() {
+  const sorted = [...S.points].sort((a,b) => b[1]-a[1])
+  if (sorted.length < 2) return
+  const avg = (sorted[0][0] + sorted[sorted.length-1][0]) / 2
+  sorted[0][0] = avg
+  sorted[sorted.length-1][0] = avg
+  S.points = sorted
+  buildShade()
+  updateInfo()
+  drawEditor()
+}
+
+window.loadPreset = function(name) {
+  const p = presets[name]
+  if (!p) return
+  S.points = p.map(pt => [...pt])
+  document.querySelectorAll('[data-p]').forEach(el => {
+    el.classList.toggle('active', el.dataset.p === name)
+  })
+  buildShade()
+  updateInfo()
+  drawEditor()
+}
+
+window.setSocket = function(type) {
+  S.socket = type
+  document.querySelectorAll('[data-s]').forEach(el => {
+    el.classList.toggle('active', el.dataset.s === type)
+  })
+  createSocketMesh(type)
+  updateInfo()
+}
+
+window.setMat = function(mat) {
+  S.mat = mat
+  document.querySelectorAll('[data-m]').forEach(el => {
+    el.classList.toggle('active', el.dataset.m === mat)
+  })
+  buildShade()
+  updateInfo()
+}
+
+window.setColor = function(color, el) {
+  S.color = color
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'))
+  if (el) el.classList.add('active')
+  document.getElementById('customClr').value = color
+  if (pointLight) pointLight.color.set(color)
+  if (pointLight2) pointLight2.color.set(color)
+  if (lightBulb) lightBulb.material.color.set(color)
+  buildShade()
+  updateInfo()
+}
+
+window.setSeg = function(v) {
+  S.segs = parseInt(v)
+  document.getElementById('segV').textContent = v
+  buildShade()
+}
+
+window.setOp = function(v) {
+  S.opacity = parseFloat(v)
+  document.getElementById('opV').textContent = parseFloat(v).toFixed(2)
+  buildShade()
+}
+
+window.setBr = function(v) {
+  S.brightness = parseFloat(v)
+  document.getElementById('brV').textContent = parseFloat(v).toFixed(1)
+  if (pointLight) pointLight.intensity = S.brightness
+  if (pointLight2) pointLight2.intensity = S.brightness * 0.25
+}
+
+window.setTh = function(v) {
+  S.thickness = parseFloat(v)
+  document.getElementById('thV').textContent = parseFloat(v).toFixed(2)
+  buildShade()
+}
+
+window.toggleRot = function() {
+  S.rotating = !S.rotating
+  document.getElementById('rotBtn').classList.toggle('active', S.rotating)
+}
+
+window.toggleWire = function() {
+  S.wireframe = !S.wireframe
+  document.getElementById('wireBtn').classList.toggle('active', S.wireframe)
+  buildShade()
+}
+
+window.viewTop = function() {
+  camera.position.set(0,4,0.01)
+  controls.target.set(0,0.5,0)
+}
+
+window.viewFront = function() {
+  camera.position.set(0,0.5,4)
+  controls.target.set(0,0.5,0)
+}
+
+window.resetCam = function() {
+  camera.position.set(3,2.5,3)
+  controls.target.set(0,0.2,0)
+}
+
+window.toggleFS = function() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen()
+  else document.exitFullscreen()
+}
+
+window.exportPNG = function() {
+  const wasRot = S.rotating
+  S.rotating = false
+  renderer.render(scene,camera)
+  const link = document.createElement('a')
+  link.download = `lumiere-${Date.now()}.png`
+  link.href = renderer.domElement.toDataURL('image/png')
+  link.click()
+  S.rotating = wasRot
+}
+
+window.applyStyle = function(name) {
+  const st = stylePresets[name]
+  if (!st) return
+
+  S.mat = st.mat
+  S.color = st.color
+  S.socket = st.socket
+  S.opacity = st.opacity
+  S.brightness = st.brightness
+
+  document.querySelectorAll('[data-m]').forEach(el => el.classList.toggle('active', el.dataset.m===st.mat))
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'))
+  document.querySelectorAll('[data-s]').forEach(el => el.classList.toggle('active', el.dataset.s===st.socket))
+  document.getElementById('customClr').value = st.color
+  document.getElementById('opV').textContent = st.opacity.toFixed(2)
+  document.getElementById('brV').textContent = st.brightness.toFixed(1)
+
+  if (pointLight) { pointLight.color.set(st.color); pointLight.intensity = st.brightness }
+  if (pointLight2) { pointLight2.color.set(st.color); pointLight2.intensity = st.brightness*0.25 }
+  if (lightBulb) lightBulb.material.color.set(st.color)
+
+  // Load profile
+  if (presets[st.profile]) {
+    S.points = presets[st.profile].map(p => [...p])
+    document.querySelectorAll('[data-p]').forEach(el => {
+      el.classList.toggle('active', el.dataset.p === st.profile)
+    })
+  }
+
+  createSocketMesh(st.socket)
+  buildShade()
+  updateInfo()
+  drawEditor()
+
+  // Animate
+  shadeGroup.scale.set(0.01,0.01,0.01)
+  animScale()
+}
+
+function animScale() {
+  const t0 = performance.now()
+  function tick() {
+    const t = Math.min((performance.now()-t0)/500, 1)
+    const ease = 1 - Math.pow(1-t, 3)
+    const s = 0.01 + 0.99*ease
+    shadeGroup.scale.set(s,s,s)
+    if (t < 1) requestAnimationFrame(tick)
+  }
+  tick()
+}
+
+window.randomDesign = function() {
+  const shapeNames = Object.keys(presets)
+  const mats = ['glass','crystal','metal','ceramic','fabric','paper']
+  const colors = ['#fbbf24','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#10b981','#ec4899','#ffffff']
+  const sockets = ['E27','E14','GU10','G9','B22']
+
+  const rShape = shapeNames[Math.floor(Math.random()*shapeNames.length)]
+  const rMat = mats[Math.floor(Math.random()*mats.length)]
+  const rColor = colors[Math.floor(Math.random()*colors.length)]
+  const rSocket = sockets[Math.floor(Math.random()*sockets.length)]
+
+  S.points = presets[rShape].map(p => [...p])
+  S.mat = rMat
+  S.color = rColor
+  S.socket = rSocket
+  S.opacity = 0.3 + Math.random()*0.6
+  S.brightness = 0.5 + Math.random()*3
+  S.thickness = 0.2 + Math.random()*1.5
+  S.segs = [16,24,32,48,64][Math.floor(Math.random()*5)]
+
+  document.querySelectorAll('[data-p]').forEach(el => el.classList.toggle('active', el.dataset.p===rShape))
+  document.querySelectorAll('[data-m]').forEach(el => el.classList.toggle('active', el.dataset.m===rMat))
+  document.querySelectorAll('.color-dot').forEach(d => {
+    const bg = d.style.background || ''
+    d.classList.toggle('active', bg===rColor || toHex(bg)===rColor)
+  })
+  document.querySelectorAll('[data-s]').forEach(el => el.classList.toggle('active', el.dataset.s===rSocket))
+  document.getElementById('customClr').value = rColor
+  document.getElementById('opV').textContent = S.opacity.toFixed(2)
+  document.getElementById('brV').textContent = S.brightness.toFixed(1)
+  document.getElementById('thV').textContent = S.thickness.toFixed(2)
+  document.getElementById('segV').textContent = S.segs
+
+  if (pointLight) { pointLight.color.set(rColor); pointLight.intensity = S.brightness }
+  if (pointLight2) { pointLight2.color.set(rColor); pointLight2.intensity = S.brightness*0.25 }
+  if (lightBulb) lightBulb.material.color.set(rColor)
+
+  createSocketMesh(rSocket)
+  buildShade()
+  updateInfo()
+  drawEditor()
+
+  shadeGroup.scale.set(0.01,0.01,0.01)
+  animScale()
+}
+
+window.resetProfile = function() {
+  window.loadPreset('sphere')
+}
+
+function updateInfo() {
+  const sorted = [...S.points].sort((a,b) => b[1]-a[1])
+  const maxR = Math.max(...sorted.map(p => p[0]))
+  const h = (sorted[0]?.[1] - sorted[sorted.length-1]?.[1] || 0).toFixed(2)
+  document.getElementById('infoText').textContent = `${S.mat} • Ø${(maxR*2).toFixed(2)} • H${h} • ${S.socket}`
+}
+
+function toHex(rgb) {
+  if (rgb.startsWith('#')) return rgb
+  const m = rgb.match(/\d+/g)
+  if (!m || m.length < 3) return rgb
+  return '#' + m.slice(0,3).map(x => parseInt(x).toString(16).padStart(2,'0')).join('')
+}
+
+// ===== INIT =====
+function init() {
+  S.points = presets.sphere.map(p => [...p])
+  init3D()
+  initEditor()
+  document.getElementById('rotBtn').classList.add('active')
+  updateInfo()
+  setTimeout(() => { document.getElementById('loader').classList.add('hidden') }, 600)
+}
+
+init()
+</script>
+</body>
+</html>
+
